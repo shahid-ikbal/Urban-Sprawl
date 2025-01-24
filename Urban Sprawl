@@ -1,0 +1,41 @@
+// Define the region of interest (Pakistan boundary)
+var pakistan = ee.FeatureCollection("users/shahidiqbal/Pak");
+
+// Load the built-up surface images for 1975 and 2020, and clip to Pakistan boundary
+var image_1975 = ee.Image('JRC/GHSL/P2023A/GHS_BUILT_S/1975').clip(pakistan);
+var built_1975 = image_1975.select('built_surface');
+var image_2020 = ee.Image('JRC/GHSL/P2023A/GHS_BUILT_S/2020').clip(pakistan);
+var built_2020 = image_2020.select('built_surface');
+
+// Mask non-built-up areas (make them transparent)
+var built_1975_masked = built_1975.updateMask(built_1975.gt(0));
+var built_2020_masked = built_2020.updateMask(built_2020.gt(0));
+
+// Define visualization parameters with distinct colors
+var visParams_1975 = {min: 0.0, max: 8000.0, palette: ['0000FF', '00FFFF']}; // Blue shades for 1975
+var visParams_2020 = {min: 0.0, max: 8000.0, palette: ['FF0000', 'FFFF00']}; // Red to yellow for 2020
+
+// Add built-up surface layers for 1975 and 2020 with transparency
+Map.addLayer(built_1975_masked, visParams_1975, 'Built-up surface [m2], 1975');
+Map.addLayer(built_2020_masked, visParams_2020, 'Built-up surface [m2], 2020');
+
+// Center the map on Pakistan
+Map.centerObject(pakistan, 10);
+
+// Add a legend
+var legend = ui.Panel({style: {position: 'bottom-left'}});
+legend.add(ui.Label({value: 'Built-up Surface Comparison', style: {fontWeight: 'bold', fontSize: '16px'}}));
+
+// Add legend items
+var makeLegendItem = function(color, name) {
+  var colorBox = ui.Label('', {backgroundColor: color, padding: '8px', margin: '4px'});
+  var description = ui.Label(name, {margin: '4px 0 4px 6px'});
+  return ui.Panel([colorBox, description], ui.Panel.Layout.Flow('horizontal'));
+};
+
+// Add legend entries for 1975 and 2020
+legend.add(makeLegendItem('0000FF', 'Built-up Surface 1975 (Blue)'));
+legend.add(makeLegendItem('FF0000', 'Built-up Surface 2020 (Red)'));
+
+// Add the legend to the map
+Map.add(legend);
